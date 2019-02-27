@@ -1,15 +1,81 @@
 #!/usr/env python3
 
 
+import datetime
+import sys
+import yaml
+
+
 class BackupRotator:
 	
 	def __init__(self):
 		
-		pass
+		self.__config = None
+		self.__config_path = None
 	
 	def run(self):
 		
-		print("YAY")
+		self.log("Begin")
+		self.consume_arguments()
+		self.consume_config(self.__config_path)
+		
+		self.rotate_paths()
+	
+	@staticmethod
+	def current_time():
+		
+		now = datetime.datetime.now()
+		now_s = now.strftime("%b-%d-%Y %I:%M%p")
+		return str(now_s)
+	
+	def log(self, s, o=None):
+		
+		now = self.current_time()
+		
+		to_log = "[" + now + "][Backup Rotator] " + str(s)
+		if o is not None:
+			to_log += " " + str(o)
+		
+		print(to_log)
+	
+	def consume_arguments(self):
+		
+		for i in range(1, len(sys.argv)):
+			
+			arg = sys.argv[i]
+			
+			if arg == "--config":
+				i, self.__config_path = self.consume_argument_companion(i)
+				print("Found config path:", self.__config_path)
+	
+	@staticmethod
+	def consume_argument_companion(arg_index):
+	
+		companion_index = arg_index + 1
+		if companion_index >= len(sys.argv):
+			raise Exception("Expected argument after", sys.argv[arg_index])
+		
+		return companion_index, sys.argv[companion_index]
+	
+	def consume_config(self, path=None):
+	
+		if path is None:
+			raise Exception("Auto-finding of config file not implemented")
+		
+		f = open(path)
+		self.__config = yaml.load(f)
+		
+		self.log("Consumed config from path: ", path)
+	
+	def rotate_paths(self):
+		
+		self.log("Begin rotating " + str(len(self.__config["paths"])) + " paths")
+		for path in self.__config["paths"]:
+			self.rotate_path(path)
+	
+	def rotate_path(self, path):
+		
+		self.log("Rotating path", path)
 
 
 def main():
