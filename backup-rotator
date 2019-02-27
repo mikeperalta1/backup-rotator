@@ -1,0 +1,22 @@
+#!/usr/env python3
+
+
+class BackupRotator:
+	
+	def __init__(self):
+		
+		pass
+	
+	def run(self):
+		
+		print("YAY")
+
+
+def main():
+	
+	rotator = BackupRotator()
+	rotator.run()
+
+
+if __name__ == "__main__":
+	main()
