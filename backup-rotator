@@ -3,6 +3,7 @@
 
 import datetime
 import os
+import shutil
 import sys
 import yaml
 
@@ -104,8 +105,14 @@ class BackupRotator:
 		
 		for purge_index in range(purge_count):
 			item_to_purge = self.pick_item_to_purge(children)
-			self.log("Purging item:", item_to_purge)
 			children.remove(item_to_purge)
+			self.log("Purging item:", item_to_purge)
+			if os.path.isfile(item_to_purge):
+				os.remove(item_to_purge)
+			elif os.path.isdir(item_to_purge):
+				shutil.rmtree(item_to_purge)
+			else:
+				raise Exception("Don't know how to remove this item: " + str(item_to_purge))
 	
 	def gather_rotation_candidates(self, path):
 		
