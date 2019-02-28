@@ -2,6 +2,7 @@
 
 
 import datetime
+import os
 import sys
 import yaml
 
@@ -76,6 +77,79 @@ class BackupRotator:
 	def rotate_path(self, path):
 		
 		self.log("Rotating path", path)
+		
+		if "maximum-items" not in self.__config:
+			raise Exception("Please provide config key: \"maximum-items\"")
+		max_items = self.__config["maximum-items"]
+		
+		if not os.path.isdir(path):
+			raise Exception("Path should be a directory:" + str(path))
+		
+		children = self.gather_rotation_candidates(path)
+		
+		# Do we need to rotate anything out?
+		if len(children) <= max_items:
+			self.log(
+				"Path only has " + str(len(children)) + " items,"
+				+ " but needs " + str(max_items) + " for rotation"
+				+ "; Won't rotate this path."
+			)
+			return
+		
+		#
+		purge_count = len(children) - max_items
+		self.log(
+			"Need to purge " + str(purge_count) + " items"
+		)
+		
+		for purge_index in range(purge_count):
+			item_to_purge = self.pick_item_to_purge(children)
+			self.log("Purging item:", item_to_purge)
+			children.remove(item_to_purge)
+	
+	def gather_rotation_candidates(self, path):
+		
+		candidates = []
+		
+		if "target-type" not in self.__config.keys():
+			raise Exception("Please provide the configuration key: target-type")
+		
+		for item_name in os.listdir(path):
+			
+			item_path = os.path.join(path, item_name)
+			
+			if self.__config["target-type"] == "file":
+				if not os.path.isfile(item_path):
+					continue
+			elif self.__config["target-type"] == "directory":
+				if not os.path.isdir(item_path):
+					continue
+			else:
+				raise Exception("Configuration key \"target-type\" must be \"file\" or \"directory\"")
+			
+			candidates.append(item_path)
+		
+		return candidates
+	
+	def pick_item_to_purge(self, items):
+		
+		if "date-detection" not in self.__config.keys():
+			raise Exception("Please provide config key: \"date-detection\"")
+		
+		detection = self.__config["date-detection"]
+		best_item = None
+		best_mtime = None
+		for item in items:
+			
+			if detection == "file":
+				mtime = os.path.getmtime(item)
+				if best_mtime is None or mtime < best_mtime:
+					best_mtime = mtime
+					best_item = item
+			else:
+				raise Exception("Invalid value for \"date-detection\": " + str(detection))
+		
+		return best_item
 
 
 def main():
