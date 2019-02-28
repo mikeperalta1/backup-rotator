@@ -138,13 +138,13 @@ class BackupRotator:
 		
 		detection = self.__config["date-detection"]
 		best_item = None
-		best_mtime = None
+		best_ctime = None
 		for item in items:
 			
 			if detection == "file":
-				mtime = os.path.getmtime(item)
-				if best_mtime is None or mtime < best_mtime:
-					best_mtime = mtime
+				ctime = os.path.getctime(item)
+				if best_ctime is None or ctime < best_ctime:
+					best_ctime = ctime
 					best_item = item
 			else:
 				raise Exception("Invalid value for \"date-detection\": " + str(detection))
