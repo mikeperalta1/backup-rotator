@@ -1,5 +1,16 @@
 #!/usr/env python3
 
+"""
+
+Mike's Backup Rotator
+
+A simple script to help automatically rotate backup files
+
+Copyright 2019 Mike Peralta; All rights reserved
+
+Released under the GNU GENERAL PUBLIC LICENSE v3 (See LICENSE file for more)
+
+"""
 
 import datetime
 import os
