@@ -44,7 +44,7 @@ Configuration files are written in [YAML](https://yaml.org/) format. Supported k
 
 If this is set to *true*, this particular configuration file won't cause any changes to disk (see *--dry-run* command line argument above)
 
-### target-type <file | directory>
+### target-type < file | directory >
 
 The target type can be set to either *file* or *directory*, and specifies what we will be rotating.
 
