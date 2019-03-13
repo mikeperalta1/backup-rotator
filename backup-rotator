@@ -72,11 +72,11 @@ class BackupRotator:
 			if arg == "--config":
 				i, one_path = self.consume_argument_companion(i)
 				self.__config_paths.append(one_path)
-				print("Found config path argument:", one_path)
+				self.log("Found config path argument:", one_path)
 			
 			elif arg == "--dry-run":
 				self.__dry_run = True
-				print("Activating global dry-run mode")
+				self.log("Activating global dry-run mode")
 	
 	@staticmethod
 	def consume_argument_companion(arg_index):
