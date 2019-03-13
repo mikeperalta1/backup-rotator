@@ -41,7 +41,7 @@ Specifies a path to a configuration file or directory. If a directory is specifi
 Here's an example of how you might invoke the program with two configuration paths and set globally to a dry run:
 
 ```
-python3 backup-rotator --dry-run --config "/my/config/path-1" --config "/my/config/path-1"
+python3 backup-rotator --dry-run --config "/my/config/path-1" --config "/my/config/path-2"
 ```
 
 ## Configuration File Format
