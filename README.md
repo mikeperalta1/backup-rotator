@@ -36,6 +36,14 @@ Tells the program to run without making any changes. Instead, it will merely lis
 
 Specifies a path to a configuration file or directory. If a directory is specified, all files in the directory will be used as configuration files.
 
+### Example Call With Arguments
+
+Here's an example of how you might invoke the program with two configuration paths and set globally to a dry run:
+
+```
+python3 backup-rotator --dry-run --config "/my/config/path-1" --config "/my/config/path-1"
+```
+
 ## Configuration File Format
 
 Configuration files are written in [YAML](https://yaml.org/) format. Supported keys are as follows:
