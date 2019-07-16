@@ -114,7 +114,7 @@ class BackupRotator:
 			raise Exception("Unable to open config file: " + path)
 		
 		# Parse
-		config = yaml.load(f)
+		config = yaml.safe_load(f)
 		
 		# Add its own path
 		config["__path"] = path
