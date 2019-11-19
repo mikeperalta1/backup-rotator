@@ -246,13 +246,3 @@ class BackupRotator:
 		else:
 			self.log("Purging directory:", dir_path)
 			shutil.rmtree(dir_path)
-
-
-def main():
-	
-	rotator = BackupRotator()
-	rotator.run()
-
-
-if __name__ == "__main__":
-	main()
