@@ -16,6 +16,7 @@ import datetime
 import os
 import shutil
 import sys
+import syslog
 import yaml
 
 
@@ -58,6 +59,8 @@ class BackupRotator:
 		to_log = "[" + now + "][Backup Rotator] " + str(s)
 		if o is not None:
 			to_log += " " + str(o)
+		
+		syslog.syslog(to_log)
 		
 		print(to_log)
 	
