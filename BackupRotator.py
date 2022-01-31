@@ -29,10 +29,13 @@ class BackupRotator:
 		self.__config_paths = []
 		self.__calculated_actions = []
 	
-	def run(self):
+	def run(self, configs, dry_run: bool = False):
 		
 		self.log("Begin")
-		self.consume_arguments()
+		
+		self.__dry_run = dry_run
+		self.__config_paths = configs
+		
 		self.consume_configs(self.__config_paths)
 		
 		# Rotate once per config
@@ -64,36 +67,10 @@ class BackupRotator:
 		
 		print(to_log)
 	
-	def consume_arguments(self):
-		
-		self.__config_paths = []
-		
-		for i in range(1, len(sys.argv)):
-			
-			arg = sys.argv[i]
-			
-			if arg == "--config":
-				i, one_path = self.consume_argument_companion(i)
-				self.__config_paths.append(one_path)
-				self.log("Found config path argument:", one_path)
-			
-			elif arg == "--dry-run":
-				self.__dry_run = True
-				self.log("Activating global dry-run mode")
-	
-	@staticmethod
-	def consume_argument_companion(arg_index):
-	
-		companion_index = arg_index + 1
-		if companion_index >= len(sys.argv):
-			raise Exception("Expected argument after", sys.argv[arg_index])
-		
-		return companion_index, sys.argv[companion_index]
-	
 	def consume_configs(self, paths: list=None):
 		
-		if paths is None:
-			raise Exception("Auto-finding of config file not implemented")
+		assert paths is not None, "Config paths cannot be None"
+		assert len(paths) > 0, "Must provide at least one config file path"
 		
 		# Use each config path
 		for path in paths:
