@@ -130,7 +130,7 @@ class BackupRotator:
 		if len(children) <= max_items:
 			self.log(
 				"Path only has " + str(len(children)) + " items,"
-				+ " but needs " + str(max_items) + " for rotation"
+				+ " but needs more than " + str(max_items) + " for rotation"
 				+ "; Won't rotate this path."
 			)
 			return
