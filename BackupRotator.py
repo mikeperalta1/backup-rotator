@@ -135,34 +135,56 @@ class BackupRotator:
 		
 		assert os.path.isdir(path), "Path should be a directory: {}".format(path)
 		
-		self.log("Rotating path for maximum items: {}".format(path))
+		self.log("Rotating path for a maximum of {} items: {}".format(
+			max_items, path
+		))
 		
 		children = self._gather_rotation_candidates(config, path)
+
+		minimum_items = self._determine_minimum_items(config)
 		
 		# Do we need to rotate anything out?
-		if len(children) <= max_items:
-			self.log(
-				"Path only has {} items, but needs more than {} for rotation; Won't rotate this path.".format(
-					len(children), max_items
-				)
-			)
+		if len(children) < minimum_items:
+			self.log("Path only has {} items, which does not meet the minimum threshold of {} items. Won't rotate this path.".format(
+				len(children), minimum_items
+			))
+		elif len(children) <= max_items:
+			self.log("Path only has {} items, but needs more than {} for rotation; Won't rotate this path.".format(
+				len(children), max_items
+			))
 			return
+		self.log("Found {} items to examine".format(len(children)))
 		
 		#
+		maximum_purge_count = len(children) - minimum_items
 		purge_count = len(children) - max_items
-		self.log("Need to purge {} items".format(purge_count))
+		self.log("Want to purge {} items".format(purge_count))
+
+		if purge_count > maximum_purge_count:
+			self.log("Reducing purge count from {} to {} items to respect minimum items setting ({})".format(
+				purge_count, maximum_purge_count, minimum_items
+			))
+			purge_count = maximum_purge_count
 		
+		children_to_purge = []
 		for purge_index in range(purge_count):
 			
 			#
-			item_to_purge, item_ctime = self._pick_oldest_item(config, children)
+			item_to_purge, item_ctime, item_age_seconds, item_age = self._pick_oldest_item(config, children)
 			children.remove(item_to_purge)
-			self.log("Found next item to purge: ({}) {} (ctime: {})".format(
+			self.log("Found next item to purge: ({}) {} ({})".format(
 				purge_index + 1,
-				os.path.basename(item_to_purge), item_ctime
+				os.path.basename(item_to_purge),
+				item_age
 			))
 			
 			#
+			children_to_purge.append(item_to_purge)
+
+		#
+		self.log("Removing items")
+		for child_to_purge in children_to_purge:
+			child_basename = os.path.basename(child_to_purge)
 			self._remove_item(config, item_to_purge)
 	
 	def _rotate_path_for_maximum_age(self, config, path: str, max_age_days: int):
@@ -173,7 +195,7 @@ class BackupRotator:
 		
 		children = self._gather_rotation_candidates(config, path)
 		
-		self.log("Examining {} items for deletion")
+		self.log("Examining {} items for deletion".format(len(children)))
 		children_to_delete = []
 		for child in children:
 			
@@ -183,20 +205,22 @@ class BackupRotator:
 			child_basename = os.path.basename(child)
 			
 			if age_days > max_age_days:
-				self.log("Old enough to delete: {} ({})".format(
+				self.log("[Old enough    ] {} ({})".format(
 					child_basename, age_formatted
 				))
 				children_to_delete.append(child)
 			else:
-				self.log("Not old enough to delete: {} ({})".format(
+				self.log("[Not Old enough] {} ({})".format(
 					child_basename, age_formatted
 				))
 
-		self.log("Removing old items ...")
-		for child_to_delete in children_to_delete:
-			basename = os.path.basename(child_to_delete)
-			self.log("> {}".format(basename))
-			self._remove_item(config, child_to_delete)
+		if len(children_to_delete) > 0:
+			self.log("Removing old items ...")
+			for child_to_delete in children_to_delete:
+				basename = os.path.basename(child_to_delete)
+				self._remove_item(config, child_to_delete)
+		else:
+			self.log("No old items to remove")
 
 		
 	@staticmethod
@@ -235,7 +259,10 @@ class BackupRotator:
 				best_ctime = ctime
 				best_item = item
 		
-		return best_item, best_ctime
+		age_seconds = self._detect_item_age_seconds(config, best_item)
+		age_string = self.seconds_to_time_string(age_seconds)
+
+		return best_item, best_ctime, age_seconds, age_string
 	
 	@staticmethod
 	def _detect_item_date(config, item):
@@ -336,3 +363,16 @@ class BackupRotator:
 		else:
 			self.log("Purging directory:", dir_path)
 			shutil.rmtree(dir_path)
+
+	
+	def _determine_minimum_items(self, config):
+		
+		minimum_items = 0
+		
+		if "minimum-items" in config.keys():
+			minimum_items = config["minimum-items"]
+			self.log("Won't delete anything unless a minimum of {} items were found".format(minimum_items))
+		else:
+			self.log("No value found for \"minimum-items\"; Will not enforce minimum item constraint.")
+		
+		return minimum_items
