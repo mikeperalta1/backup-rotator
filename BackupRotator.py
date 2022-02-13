@@ -14,6 +14,7 @@ Released under the GNU GENERAL PUBLIC LICENSE v3 (See LICENSE file for more)
 
 import datetime
 import os
+# import pprint
 import shutil
 import sys
 import syslog
@@ -185,7 +186,7 @@ class BackupRotator:
 		self.log("Removing items")
 		for child_to_purge in children_to_purge:
 			child_basename = os.path.basename(child_to_purge)
-			self._remove_item(config, item_to_purge)
+			self._remove_item(config, child_to_purge)
 	
 	def _rotate_path_for_maximum_age(self, config, path: str, max_age_days: int):
 		
