@@ -9,5 +9,6 @@ pyyaml = ">=5.4"
 [dev-packages]
 
 [requires]
-python_version = "3"
+python_version = "3.6"
+
 
