@@ -149,6 +149,7 @@ class BackupRotator:
 			self.log("Path only has {} items, which does not meet the minimum threshold of {} items. Won't rotate this path.".format(
 				len(children), minimum_items
 			))
+			return
 		elif len(children) <= max_items:
 			self.log("Path only has {} items, but needs more than {} for rotation; Won't rotate this path.".format(
 				len(children), max_items
@@ -195,6 +196,14 @@ class BackupRotator:
 		self.log("Rotating path for max age of {} days: {}".format(max_age_days, path))
 		
 		children = self._gather_rotation_candidates(config, path)
+		minimum_items = self._determine_minimum_items(config)
+		
+		# Do we need to rotate anything out?
+		if len(children) < minimum_items:
+			self.log("Path only has {} items, which does not meet the minimum threshold of {} items. Won't rotate this path.".format(
+				len(children), minimum_items
+			))
+			return
 		
 		self.log("Examining {} items for deletion".format(len(children)))
 		children_to_delete = []

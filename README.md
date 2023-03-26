@@ -78,11 +78,25 @@ Specifies the method used when attempting to determine how old a backup file/dir
 
 Currently, only *file* is supported
 
+### minimum-items < INTEGER >
+
+Specifies the minimum number of backup files/dirs that must be present before rotating can happen. Should be an integer.
+
+This option doesn't specify how much to rotate on its own, but when rotation is possible. It should probably be used with maximum-age or something other than maximum-items.
+
+For example, when the *minimum-items* value is set to 5, and *target-type* is *file*, the program will not rotate any files until there are at least 5 in the target directory.
+
 ### maximum-items < INTEGER >
 
 Specifies the maximum number of backup files/dirs that are allowed in a path before rotating will happen. Should be an integer.
 
-For example, when the *maximum-items* value is set to 5, and *target-type* is *file*, the program will not rotate any files until there are at least 5 in the target directory.
+For example, when the *maximum-items* value is set to 500, and *target-type* is *file*, the program will not rotate any files until there are at least 500 in the target directory.
+
+### maximum-age < INTEGER >
+
+Specifies the maximum age (in days) of backup files/dirs that are allowed in a path before rotating will happen. Should be an integer.
+
+For example, when the *maximum-age* value is set to 30, and *target-type* is *file*, the program will not rotate any files that are newer than 30 days.
 
 ### paths < Array of Paths >
 
