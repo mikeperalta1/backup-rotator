@@ -47,10 +47,11 @@ class Logger:
 		handler.setFormatter(formatter)
 		self.__logger.addHandler(handler)
 		
-		self.debug("Test debug log")
-		self.info("Test info log")
-		self.warn("Test warn log")
-		self.error("Test error log")
+		# This is annoying inside cron
+		# self.debug("Test debug log")
+		# self.info("Test info log")
+		# self.warn("Test warn log")
+		# self.error("Test error log")
 		
 	
 	def debug(self, s):
