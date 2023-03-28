@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 
-from BackupRotator import BackupRotator
+from domain.BackupRotator import BackupRotator
+
 
 import argparse
 
 
-#
 def main():
 	
 	parser = argparse.ArgumentParser(
