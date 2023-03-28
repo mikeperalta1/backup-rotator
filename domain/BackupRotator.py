@@ -12,6 +12,11 @@ Releasing to the public under the GNU GENERAL PUBLIC LICENSE v3 (See LICENSE fil
 
 """
 
+
+from domain.Logger import Logger
+from domain.Config import Config
+
+
 import datetime
 import os
 # import pprint
@@ -24,23 +29,18 @@ import yaml
 
 class BackupRotator:
 	
-	__DEFAULT_VALID_EXTENSIONS = [
-		"yaml",
-		"yml"
-	]
-	
 	def __init__(self):
+		
+		self.__logger = Logger(type(self).__name__)
 		
 		self.__dry_run = False
 		self.__configs = []
 		self.__config_paths = []
 		self.__calculated_actions = []
-
-		self.__valid_extensions = self.__DEFAULT_VALID_EXTENSIONS
 	
 	def run(self, configs, dry_run: bool = False):
 		
-		self.log("Begin")
+		self.info("Begin")
 		
 		self.__dry_run = dry_run
 		self.__config_paths = configs
@@ -54,7 +54,7 @@ class BackupRotator:
 			config = self.__configs[config_index]
 			
 			#
-			self.log("Rotating for config " + str(config_index + 1) + " of " + str(len(self.__configs)), config["__path"])
+			self.info("Rotating for config " + str(config_index + 1) + " of " + str(len(self.__configs)), config["__path"])
 			self._do_rotate(config)
 	
 	@staticmethod
@@ -64,42 +64,22 @@ class BackupRotator:
 		now_s = now.strftime("%b-%d-%Y %I:%M%p")
 		return str(now_s)
 	
-	def log(self, s, o=None):
-		
-		now = self.current_time()
-		
-		to_log = "[" + now + "][Backup Rotator] " + str(s)
-		if o is not None:
-			to_log += " " + str(o)
-		
-		syslog.syslog(to_log)
-		
-		print(to_log)
+	def info(self, s):
+		self.__logger.info(s)
+	def warn(self, s):
+		self.__logger.warn(s)
+	def error(self, s):
+		self.__logger.error(s)
 	
 	def _consume_configs(self, paths: list=None):
 		
-		assert paths is not None, "Config paths cannot be None"
-		assert len(paths) > 0, "Must provide at least one config file path"
+		configs = Config().gather_valid_configs(paths=paths)
+		print("Configs:")
+		print(configs)
+		return
+		for config in configs:
+			self._consume_config(path=config)
 		
-		# Use each config path
-		for path in paths:
-			
-			# If this is a single file
-			if os.path.isfile(path):
-				
-				self._consume_config(path)
-			
-			# If this is a directory
-			elif os.path.isdir(path):
-				
-				# Iterate over each file inside
-				for file_name in os.listdir(path):
-					
-					one_file = os.path.join(path, file_name)
-					
-					if os.path.isfile(one_file) and self._check_file_extension(file_path=one_file, extensions=None):
-						self._consume_config(one_file)
-				
 	def _consume_config(self, path: str):
 		
 		# Open the file
@@ -115,7 +95,7 @@ class BackupRotator:
 		
 		# Consume to internal
 		self.__configs.append(config)
-		self.log("Consumed config from path:", path)
+		self.info("Consumed config from path:", path)
 	
 	def _do_rotate(self, config):
 	
@@ -123,7 +103,7 @@ class BackupRotator:
 	
 	def _rotate_paths(self, config):
 		
-		self.log("Begin rotating " + str(len(config["paths"])) + " paths")
+		self.info("Begin rotating " + str(len(config["paths"])) + " paths")
 		for path in config["paths"]:
 			self._rotate_path(config, path)
 	
@@ -131,7 +111,7 @@ class BackupRotator:
 		
 		assert os.path.isdir(path), "Path should be a directory: {}".format(path)
 		
-		self.log("Rotating path: {}".format(path))
+		self.info("Rotating path: {}".format(path))
 		
 		found_any_rotation_keys = False
 		if "maximum-items" in config.keys():
@@ -148,7 +128,7 @@ class BackupRotator:
 		
 		assert os.path.isdir(path), "Path should be a directory: {}".format(path)
 		
-		self.log("Rotating path for a maximum of {} items: {}".format(
+		self.info("Rotating path for a maximum of {} items: {}".format(
 			max_items, path
 		))
 		
@@ -158,24 +138,24 @@ class BackupRotator:
 		
 		# Do we need to rotate anything out?
 		if len(children) < minimum_items:
-			self.log("Path only has {} items, which does not meet the minimum threshold of {} items. Won't rotate this path.".format(
+			self.info("Path only has {} items, which does not meet the minimum threshold of {} items. Won't rotate this path.".format(
 				len(children), minimum_items
 			))
 			return
 		elif len(children) <= max_items:
-			self.log("Path only has {} items, but needs more than {} for rotation; Won't rotate this path.".format(
+			self.info("Path only has {} items, but needs more than {} for rotation; Won't rotate this path.".format(
 				len(children), max_items
 			))
 			return
-		self.log("Found {} items to examine".format(len(children)))
+		self.info("Found {} items to examine".format(len(children)))
 		
 		#
 		maximum_purge_count = len(children) - minimum_items
 		purge_count = len(children) - max_items
-		self.log("Want to purge {} items".format(purge_count))
+		self.info("Want to purge {} items".format(purge_count))
 
 		if purge_count > maximum_purge_count:
-			self.log("Reducing purge count from {} to {} items to respect minimum items setting ({})".format(
+			self.info("Reducing purge count from {} to {} items to respect minimum items setting ({})".format(
 				purge_count, maximum_purge_count, minimum_items
 			))
 			purge_count = maximum_purge_count
@@ -186,7 +166,7 @@ class BackupRotator:
 			#
 			item_to_purge, item_ctime, item_age_seconds, item_age = self._pick_oldest_item(config, children)
 			children.remove(item_to_purge)
-			self.log("Found next item to purge: ({}) {} ({})".format(
+			self.info("Found next item to purge: ({}) {} ({})".format(
 				purge_index + 1,
 				os.path.basename(item_to_purge),
 				item_age
@@ -196,7 +176,7 @@ class BackupRotator:
 			children_to_purge.append(item_to_purge)
 
 		#
-		self.log("Removing items")
+		self.info("Removing items")
 		for child_to_purge in children_to_purge:
 			child_basename = os.path.basename(child_to_purge)
 			self._remove_item(config, child_to_purge)
@@ -205,19 +185,19 @@ class BackupRotator:
 		
 		assert os.path.isdir(path), "Path should be a directory: {}".format(path)
 		
-		self.log("Rotating path for max age of {} days: {}".format(max_age_days, path))
+		self.info("Rotating path for max age of {} days: {}".format(max_age_days, path))
 		
 		children = self._gather_rotation_candidates(config, path)
 		minimum_items = self._determine_minimum_items(config)
 		
 		# Do we need to rotate anything out?
 		if len(children) < minimum_items:
-			self.log("Path only has {} items, which does not meet the minimum threshold of {} items. Won't rotate this path.".format(
+			self.info("Path only has {} items, which does not meet the minimum threshold of {} items. Won't rotate this path.".format(
 				len(children), minimum_items
 			))
 			return
 		
-		self.log("Examining {} items for deletion".format(len(children)))
+		self.info("Examining {} items for deletion".format(len(children)))
 		children_to_delete = []
 		for child in children:
 			
@@ -227,22 +207,22 @@ class BackupRotator:
 			child_basename = os.path.basename(child)
 			
 			if age_days > max_age_days:
-				self.log("[Old enough    ] {} ({})".format(
+				self.info("[Old enough    ] {} ({})".format(
 					child_basename, age_formatted
 				))
 				children_to_delete.append(child)
 			else:
-				self.log("[Not Old enough] {} ({})".format(
+				self.info("[Not Old enough] {} ({})".format(
 					child_basename, age_formatted
 				))
 
 		if len(children_to_delete) > 0:
-			self.log("Removing old items ...")
+			self.info("Removing old items ...")
 			for child_to_delete in children_to_delete:
 				basename = os.path.basename(child_to_delete)
 				self._remove_item(config, child_to_delete)
 		else:
-			self.log("No old items to remove")
+			self.info("No old items to remove")
 
 		
 	@staticmethod
@@ -366,11 +346,11 @@ class BackupRotator:
 			raise Exception("Tried to remove a file, but this path isn't a file: " + str(file_path))
 		
 		if self.__dry_run:
-			self.log("Won't purge file during global-level dry run: ", file_path)
+			self.info("Won't purge file during global-level dry run: ", file_path)
 		elif "dry-run" in config.keys() and config["dry-run"] is True:
-			self.log("Won't purge file during config-level dry run: ", file_path)
+			self.info("Won't purge file during config-level dry run: ", file_path)
 		else:
-			self.log("Purging file:", file_path)
+			self.info("Purging file:", file_path)
 			os.remove(file_path)
 	
 	def _remove_directory(self, config, dir_path):
@@ -379,11 +359,11 @@ class BackupRotator:
 			raise Exception("Tried to remove a directory, but this path isn't a directory: " + str(dir_path))
 		
 		if self.__dry_run:
-			self.log("Won't purge directory during global-level dry run: ", dir_path)
+			self.info("Won't purge directory during global-level dry run: ", dir_path)
 		elif "dry-run" in config.keys() and config["dry-run"] is True:
-			self.log("Won't purge directory during config-level dry run: ", dir_path)
+			self.info("Won't purge directory during config-level dry run: ", dir_path)
 		else:
-			self.log("Purging directory:", dir_path)
+			self.info("Purging directory:", dir_path)
 			shutil.rmtree(dir_path)
 
 	
@@ -393,25 +373,8 @@ class BackupRotator:
 		
 		if "minimum-items" in config.keys():
 			minimum_items = config["minimum-items"]
-			self.log("Won't delete anything unless a minimum of {} items were found".format(minimum_items))
+			self.info("Won't delete anything unless a minimum of {} items were found".format(minimum_items))
 		else:
-			self.log("No value found for \"minimum-items\"; Will not enforce minimum item constraint.")
+			self.info("No value found for \"minimum-items\"; Will not enforce minimum item constraint.")
 		
 		return minimum_items
-
-	def _check_file_extension(self, file_path, extensions: list=None):
-		
-		if extensions is None:
-			extensions = self.__valid_extensions
-		
-		file_name, file_extension = os.path.splitext(file_path)
-		if len(file_extension) > 0 and file_extension[0] == ".":
-			file_extension = file_extension[1:]
-		file_extension = file_extension.lower()
-
-		for valid_extension in extensions:
-			#print(file_name, "---", file_extension, "---", valid_extension)
-			if file_extension == valid_extension:
-				return True
-		
-		return False
