@@ -54,7 +54,7 @@ class BackupRotator:
 			config = self.__configs[config_index]
 			
 			#
-			self.info("Rotating for config " + str(config_index + 1) + " of " + str(len(self.__configs)), config["__path"])
+			self.info(f"Rotating for config {config_index + 1} of {len(self.__configs)} : {config['__path']}")
 			self._do_rotate(config)
 	
 	@staticmethod
@@ -76,9 +76,6 @@ class BackupRotator:
 	def _consume_configs(self, paths: list=None):
 		
 		configs = self.__config_helper.gather_valid_configs(paths=paths)
-		print("Configs:")
-		print(configs)
-		return
 		for config in configs:
 			self._consume_config(path=config)
 		
@@ -97,7 +94,7 @@ class BackupRotator:
 		
 		# Consume to internal
 		self.__configs.append(config)
-		self.info("Consumed config from path:", path)
+		self.info("fConsumed config from path: {path}")
 	
 	def _do_rotate(self, config):
 	
@@ -217,7 +214,7 @@ class BackupRotator:
 				self.info("[Not Old enough] {} ({})".format(
 					child_basename, age_formatted
 				))
-
+		
 		if len(children_to_delete) > 0:
 			self.info("Removing old items ...")
 			for child_to_delete in children_to_delete:
@@ -225,7 +222,7 @@ class BackupRotator:
 				self._remove_item(config, child_to_delete)
 		else:
 			self.info("No old items to remove")
-
+		
 		
 	@staticmethod
 	def _gather_rotation_candidates(config, path):
@@ -348,11 +345,11 @@ class BackupRotator:
 			raise Exception("Tried to remove a file, but this path isn't a file: " + str(file_path))
 		
 		if self.__dry_run:
-			self.info("Won't purge file during global-level dry run: ", file_path)
+			self.info(f"Won't purge file during global-level dry run: {file_path}")
 		elif "dry-run" in config.keys() and config["dry-run"] is True:
-			self.info("Won't purge file during config-level dry run: ", file_path)
+			self.info(f"Won't purge file during config-level dry run: {file_path}")
 		else:
-			self.info("Purging file:", file_path)
+			self.info(f"Purging file: {file_path}")
 			os.remove(file_path)
 	
 	def _remove_directory(self, config, dir_path):
@@ -361,11 +358,11 @@ class BackupRotator:
 			raise Exception("Tried to remove a directory, but this path isn't a directory: " + str(dir_path))
 		
 		if self.__dry_run:
-			self.info("Won't purge directory during global-level dry run: ", dir_path)
+			self.info(f"Won't purge directory during global-level dry run: {dir_path}")
 		elif "dry-run" in config.keys() and config["dry-run"] is True:
-			self.info("Won't purge directory during config-level dry run: ", dir_path)
+			self.info(f"Won't purge directory during config-level dry run: {dir_path}")
 		else:
-			self.info("Purging directory:", dir_path)
+			self.info(f"Purging directory: {dir_path}")
 			shutil.rmtree(dir_path)
 
 	
