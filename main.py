@@ -14,6 +14,14 @@ def main():
 	)
 	
 	parser.add_argument(
+		"--debug", "--verbose",
+		dest="debug",
+		default=False,
+		action="store_true",
+		help="Verbose/Debug logging mode"
+	)
+	
+	parser.add_argument(
 		"--config", "-c",
 		dest="config_files",
 		default=[],
@@ -31,7 +39,9 @@ def main():
 	
 	args = parser.parse_args()
 	
-	rotator = BackupRotator()
+	rotator = BackupRotator(
+		debug=args.debug
+	)
 	rotator.run(
 		configs=args.config_files,
 		dry_run=args.dry_run

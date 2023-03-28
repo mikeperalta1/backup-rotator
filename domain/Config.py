@@ -12,17 +12,19 @@ class Config:
 		"yml"
 	]
 	
-	def __init__(self):
+	def __init__(self, logger):
 
-		self.__logger = Logger(type(self).__name__)
+		self.__logger = logger
 		self.__valid_extensions = self.__DEFAULT_VALID_EXTENSIONS
 	
+	def debug(self, s):
+		self.__logger.debug(f"[{type(self).__name__}] {s}")
 	def info(self, s):
-		self.__logger.info(s)
+		self.__logger.info(f"[{type(self).__name__}] {s}")
 	def warn(self, s):
-		self.__logger.warn(s)
+		self.__logger.warn(f"[{type(self).__name__}] {s}")
 	def error(self, s):
-		self.__logger.error(s)
+		self.__logger.error(f"[{type(self).__name__}] {s}")
 	
 	@staticmethod
 	def get_dir_files_recursive(path: str):
@@ -45,7 +47,7 @@ class Config:
 		assert paths is not None, "Config paths cannot be None"
 		assert len(paths) > 0, "Must provide at least one config file path"
 		
-		self.__logger.info("Gathering valid configs")
+		self.info("Gathering valid configs")
 		
 		file_paths = []
 		configs = []
@@ -54,16 +56,16 @@ class Config:
 		# First gather all files that are potential configs
 		for path in paths:
 			
-			self.__logger.info(f"Inspecting path: {path}")
+			self.info(f"Inspecting path: {path}")
 			
 			if os.path.isfile(path):
-				self.__logger.info(f"Path is a file; Adding directly to potential config candidates: {path}")
+				self.debug(f"Path is a file; Adding directly to potential config candidates: {path}")
 				file_paths.append(path)
-				
+			
 			elif os.path.isdir(path):
-				self.__logger.info(f"Path is a dir; Scanning recursively for potential config candidate files: {path}")
+				self.debug(f"Path is a dir; Scanning recursively for potential config candidate files: {path}")
 				for file_path in Config.get_dir_files_recursive(path=path):
-					self.__logger.info(f"> Candidate file: {file_path}")
+					self.info(f"> Candidate file: {file_path}")
 					file_paths.append(file_path)
 			
 			else:
@@ -76,19 +78,19 @@ class Config:
 			else:
 				not_configs.append(file_path)
 		
-		self.__logger.info("Filtered out non-config files:")
+		self.info("Filtered out non-config files:")
 		if len(not_configs) > 0:
 			for not_config in not_configs:
-				self.__logger.info(f"> {not_config}")
+				self.info(f"> {not_config}")
 		else:
-			self.__logger.info("> [none]")
+			self.info("> [none]")
 		
-		self.__logger.info("Kept config-looking files:")
+		self.info("Kept config-looking files:")
 		if len(configs) > 0:
 			for config in configs:
-				self.__logger.info(f"> {config}")
+				self.info(f"> {config}")
 		else:
-			self.__logger.info("> [none]")
+			self.info("> [none]")
 		
 		return configs
 	

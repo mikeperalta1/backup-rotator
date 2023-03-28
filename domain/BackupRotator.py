@@ -29,9 +29,10 @@ import yaml
 
 class BackupRotator:
 	
-	def __init__(self):
+	def __init__(self, debug:bool = False):
 		
-		self.__logger = Logger(type(self).__name__)
+		self.__logger = Logger(name=type(self).__name__, debug=debug)
+		self.__config_helper = Config(logger=self.__logger)
 		
 		self.__dry_run = False
 		self.__configs = []
@@ -64,6 +65,8 @@ class BackupRotator:
 		now_s = now.strftime("%b-%d-%Y %I:%M%p")
 		return str(now_s)
 	
+	def debug(self, s):
+		self.__logger.debug(s)
 	def info(self, s):
 		self.__logger.info(s)
 	def warn(self, s):
@@ -73,7 +76,7 @@ class BackupRotator:
 	
 	def _consume_configs(self, paths: list=None):
 		
-		configs = Config().gather_valid_configs(paths=paths)
+		configs = self.__config_helper.gather_valid_configs(paths=paths)
 		print("Configs:")
 		print(configs)
 		return
@@ -133,7 +136,7 @@ class BackupRotator:
 		))
 		
 		children = self._gather_rotation_candidates(config, path)
-
+		
 		minimum_items = self._determine_minimum_items(config)
 		
 		# Do we need to rotate anything out?
