@@ -5,6 +5,12 @@ This program functions somewhat similarly to a log rotator. It's purpose is to r
 
 Suppose you have a third party backup program regularly dropping backup files into some directory. You could use this program to limit the number of files that remain in the directory at any given time.
 
+# License
+
+Copyright 2023 Mike Peralta; All rights reserved
+
+Releasing to the public under the GNU GENERAL PUBLIC LICENSE v3 (See LICENSE file for more)
+
 # Requirements
 
 * Python 3

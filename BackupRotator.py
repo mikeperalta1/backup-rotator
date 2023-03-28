@@ -6,9 +6,9 @@ Mike's Backup Rotator
 
 A simple script to help automatically rotate backup files
 
-Copyright 2022 Mike Peralta; All rights reserved
+Copyright 2023 Mike Peralta; All rights reserved
 
-Released under the GNU GENERAL PUBLIC LICENSE v3 (See LICENSE file for more)
+Releasing to the public under the GNU GENERAL PUBLIC LICENSE v3 (See LICENSE file for more)
 
 """
 
