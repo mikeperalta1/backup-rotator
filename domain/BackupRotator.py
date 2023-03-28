@@ -22,7 +22,6 @@ import os
 # import pprint
 import shutil
 import sys
-import syslog
 import time
 import yaml
 
