@@ -94,7 +94,7 @@ class BackupRotator:
 		
 		# Consume to internal
 		self.__configs.append(config)
-		self.info("fConsumed config from path: {path}")
+		self.info(f"Consumed config from path: {path}")
 	
 	def _do_rotate(self, config):
 	
