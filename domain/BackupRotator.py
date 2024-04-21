@@ -274,9 +274,7 @@ class BackupRotator:
 		if detection == "file":
 			ctime = os.path.getctime(item)
 		else:
-			raise AssertionError("Invalid value for \"date-detection\"; Should be one of {file}: {}".format(
-				detection
-			))
+			raise AssertionError(f"Invalid value for \"date-detection\"; Should be one of [file]: {detection}")
 
 		return ctime
 
