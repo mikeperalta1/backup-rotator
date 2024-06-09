@@ -32,7 +32,7 @@ class Config:
 	def error(self, s):
 		self.__logger.error(f"[{type(self).__name__}] {s}")
 	
-	def gather_valid_configs(self, paths: list = None) -> [Path]:
+	def gather_valid_config_paths(self, paths: list = None) -> [Path]:
 		
 		assert paths is not None, "Config paths cannot be None"
 		assert len(paths) > 0, "Must provide at least one config file path"
@@ -40,8 +40,8 @@ class Config:
 		self.info("Gathering valid configs")
 		
 		file_paths = []
-		configs = []
-		not_configs = []
+		config_paths = []
+		not_config_paths = []
 		
 		# First gather all files that are potential configs
 		for path_str in paths:
@@ -81,25 +81,25 @@ class Config:
 		for file_path in file_paths:
 			
 			if self.check_file_extension(file_path=file_path, extensions=None):
-				configs.append(file_path)
+				config_paths.append(file_path)
 			else:
-				not_configs.append(file_path)
+				not_config_paths.append(file_path)
 		
 		self.info("Filtered out non-config files:")
-		if len(not_configs) > 0:
-			for not_config in not_configs:
-				self.info(f"> {not_config}")
+		if len(not_config_paths) > 0:
+			for not_config_path in not_config_paths:
+				self.info(f"> {not_config_path}")
 		else:
 			self.info("> [none]")
 		
 		self.info("Kept config-looking files:")
-		if len(configs) > 0:
-			for config in configs:
-				self.info(f"> {config}")
+		if len(config_paths) > 0:
+			for config_path in config_paths:
+				self.info(f"> {config_path}")
 		else:
 			self.info("> [none]")
 		
-		return configs
+		return config_paths
 	
 	def check_file_extension(self, file_path: Path, extensions: list = None) -> bool:
 		
