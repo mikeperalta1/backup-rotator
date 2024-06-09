@@ -196,7 +196,8 @@ class ConfigFile:
 						f"Option date-detection not found; Will use default: {self.__date_detection}"
 					)
 			else:
-				self.warning(f"No options key found!")
+				self.error(f"No options key found!")
+				raise AssertionError(f"No options key found!")
 			
 			assert "paths" in self.__data, (
 				f"Could not find 'paths' key"
