@@ -15,7 +15,7 @@ class Config:
 		self.__logger = logger
 		
 		self.__config_files_paths: [Path] = config_files_paths
-		self.__configs: {} = None
+		self.__configs = {}
 		
 		self.__scanner = Scanner(
 			logger=self.__logger
@@ -23,9 +23,11 @@ class Config:
 		
 		self._consume_configs()
 	
-	def _consume_configs(self, paths: [Path] = None):
+	def _consume_configs(self):
 		
-		config_paths = self.__scanner.gather_valid_config_paths(paths=paths)
+		config_paths = self.__scanner.gather_valid_config_paths(
+			paths=self.__config_files_paths
+		)
 		
 		for config_path in config_paths:
 			

@@ -128,36 +128,29 @@ class BackupRotator:
 			f"Rotating path: {path}"
 		)
 		
-		found_any_rotation_keys = False
-		if config.maximum_items:
-			
-			found_any_rotation_keys = True
-			
-			self._rotate_path_for_maximum_items(
-				config=config,
-				path=path,
-			)
+		self._rotate_path_for_maximum_items(
+			config=config,
+			path=path,
+		)
 		
-		if config.maximum_age:
-			
-			found_any_rotation_keys = True
-			
-			self._rotate_path_for_maximum_age(
-				config=config,
-				path=path,
-			)
-		
-		assert found_any_rotation_keys is True, (
-			"Config needs one of the following keys: \"maximum-items\""
+		self._rotate_path_for_maximum_age(
+			config=config,
+			path=path,
 		)
 	
 	def _rotate_path_for_maximum_items(self, config: ConfigFile, path: Path):
 		
 		assert path.is_dir(), f"Path should be a directory: {path}"
 		
-		self.info(
-			f"Rotating path for a maximum of {config.maximum_items} items: {path}"
-		)
+		if config.maximum_items:
+			self.info(
+				f"Rotating path for a maximum of {config.maximum_items} items: {path}"
+			)
+		else:
+			self.info(
+				f"Not configured to rotate for maximum number of items."
+			)
+			return
 		
 		candidate_items = self._gather_rotation_candidates(config=config, path=path)
 		
@@ -230,9 +223,15 @@ class BackupRotator:
 		
 		assert path.is_dir(), f"Path should be a directory: {path}"
 		
-		self.info(
-			f"Rotating path for max age of {config.maximum_age} days: {path}"
-		)
+		if config.maximum_age:
+			self.info(
+				f"Rotating path for max age of {config.maximum_age} days: {path}"
+			)
+		else:
+			self.info(
+				f"Not configured to rotate for a maximum number of days."
+			)
+			return
 		
 		candidate_items = self._gather_rotation_candidates(config=config, path=path)
 		minimum_items = self._determine_minimum_items(config=config)

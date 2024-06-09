@@ -53,19 +53,19 @@ class ConfigFile:
 		s = ""
 		
 		s += "*** Config File ***"
-		s += f"> Path: {self.__path}"
-		s += f"> Dry run: " + ("Yes" if self.__dry_run else "No")
-		s += f"> Minimum items: {self.__minimum_items}"
-		s += f"> Maximum items: {self.__maximum_items}"
-		s += f"> Maximum age (in days): {self.__maximum_age}"
-		s += f"> Target type: {self.__target_type}"
-		s += f"> Date detection: {self.__date_detection}"
-		s += f"> Rotatable paths: "
+		s += f"\n> Path: {self.__path}"
+		s += f"\n> Dry run: " + ("Yes" if self.__dry_run else "No")
+		s += f"\n> Minimum items: {self.__minimum_items}"
+		s += f"\n> Maximum items: {self.__maximum_items}"
+		s += f"\n> Maximum age (in days): {self.__maximum_age}"
+		s += f"\n> Target type: {self.__target_type}"
+		s += f"\n> Date detection: {self.__date_detection}"
+		s += f"\n> Rotatable paths: "
 		if len(self.__rotatable_paths) > 0:
 			for p in self.__rotatable_paths:
-				s += f">> {p}"
+				s += f"\n>> {p}"
 		else:
-			s += ">> [none]"
+			s += "\n>> [none]"
 		
 		return s
 	
@@ -123,6 +123,14 @@ class ConfigFile:
 					self.warning(
 						f"No minimum-items option found; Will use default: {self.__minimum_items}"
 					)
+				
+				assert (
+					"maximum-items" in options.keys()
+					or
+					"maximum-age" in options.keys()
+				), (
+					"Options should include either maximum-items or maximum-age"
+				)
 				
 				if "maximum-items" in options.keys():
 					
@@ -183,6 +191,8 @@ class ConfigFile:
 					self.warning(
 						f"Option date-detection not found; Will use default: {self.__date_detection}"
 					)
+			else:
+				self.warning(f"No options key found!")
 			
 			assert "paths" in self.__data, (
 				f"Could not find 'paths' key"
@@ -193,6 +203,17 @@ class ConfigFile:
 			assert isinstance(rotatable_paths, list), (
 				"Rotatable 'paths' key must be a string or list"
 			)
+			for i in range(len(rotatable_paths)):
+				p = rotatable_paths[i]
+				if isinstance(p, Path):
+					continue
+				elif isinstance(p, str):
+					rotatable_paths[i] = Path(p)
+				else:
+					raise AssertionError(
+						f"All rotatable paths must be strings or pathlib::Path objects"
+					)
+			
 			self.__rotatable_paths = rotatable_paths
 			self.info(f"Found {len(self.__rotatable_paths)} rotatable paths")
 		
