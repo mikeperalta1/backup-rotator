@@ -1,0 +1,47 @@
+#!/bin/bash
+
+log()
+{
+	echo "[Mike's Backup Rotator - Init Env] $1"
+}
+complain()
+{
+	echo "[Mike's Backup Rotator - Init Env] $1" 1>&2
+}
+die()
+{
+	complain "Fatal: $1"
+	exit 1
+}
+
+SCRIPT_PATH=$(readlink -f "$0")
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+SCRIPT_NAME=$(basename "$SCRIPT_PATH")
+
+log "Begin ${SCRIPT_NAME}"
+log "Script path: ${SCRIPT_PATH}"
+log "Script dir: ${SCRIPT_DIR}"
+log "PATH: ${PATH}"
+
+log "PWD before switching: $(pwd)"
+cd "${SCRIPT_DIR}" || die "Failed to switch to project directory: ${SCRIPT_DIR}"
+log "PWD after switching: $(pwd)"
+
+log "Printing environment:"
+printenv
+
+log "Ensuring python installation with pyenv"
+pyenv versions
+pyenv install --skip-existing || die "Failed to ensure python installation with pyenv"
+
+log "Installing/upgrading pip and pipenv"
+pip install --upgrade pip pipenv || die "Failed to install/upgrade pip and pipenv"
+
+log "Removing old pip environment"
+pipenv --rm  # Don't die because this will return an error if the env didn't already exist
+
+# Install/sync
+log "Syncing pip dependencies"
+pipenv sync || die "Failed to sync pip environment with pipenv"
+
+
