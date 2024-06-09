@@ -313,7 +313,7 @@ class BackupRotator:
 		best_ctime = None
 		for item in items:
 			
-			ctime = self._detect_item_date(config, item)
+			ctime = self._detect_item_creation_date(config, item)
 			if best_ctime is None or ctime < best_ctime:
 				best_ctime = ctime
 				best_item = item
@@ -324,11 +324,11 @@ class BackupRotator:
 		return best_item, best_ctime, age_seconds, age_string
 	
 	@staticmethod
-	def _detect_item_date(config: ConfigFile, item: Path) -> datetime.datetime:
+	def _detect_item_creation_date(config: ConfigFile, item: Path) -> datetime.datetime:
 		
 		if config.date_detection == "file":
 			ctime = datetime.datetime.fromtimestamp(
-				item.stat().st_ctime, tz=datetime.timezone.utc
+				item.stat().st_ctime
 			)
 		
 		else:
@@ -342,7 +342,7 @@ class BackupRotator:
 		
 		now = datetime.datetime.now()
 		
-		ctime = self._detect_item_date(config=config, item=item)
+		ctime = self._detect_item_creation_date(config=config, item=item)
 		delta = now - ctime.now()
 		
 		return delta.seconds
