@@ -251,8 +251,8 @@ class BackupRotator:
 		items_to_delete = []
 		for item in candidate_items:
 			
-			age_seconds = self._detect_item_age_seconds(config=config, item=item)
-			age_days = self._detect_item_age_days(config=config, item=item)
+			age_seconds = Util.detect_item_age_seconds(config=config, item=item)
+			age_days = Util.detect_item_age_days(config=config, item=item)
 			age_formatted = Util.seconds_to_time_string(age_seconds)
 			
 			if age_days > config.maximum_age:
@@ -281,21 +281,20 @@ class BackupRotator:
 		
 		candidates: [Path] = []
 		
-		for item_name in path.iterdir():
+		for item in path.iterdir():
 			
-			item_path = path / item_name
-			self.debug(f"Found an item: {item_name} ==> {item_path}")
+			self.debug(f"Found an item: {item.name}")
 			
 			if config.target_type == "file":
 				
-				if not item_path.is_file():
-					self.debug(f"Not a file; Skipping: {item_name}")
+				if not item.is_file():
+					self.debug(f"Not a file; Skipping: {item.name}")
 					continue
 			
 			elif config.target_type == "directory":
 				
-				if not item_path.is_dir():
-					self.debug(f"Not a directory; Skipping: {item_name}")
+				if not item.is_dir():
+					self.debug(f"Not a directory; Skipping: {item.name}")
 					continue
 			
 			else:
@@ -303,7 +302,7 @@ class BackupRotator:
 					f"Unsupported target type: {config.target_type}"
 				)
 			
-			candidates.append(item_path)
+			candidates.append(item)
 		
 		return candidates
 	
@@ -313,48 +312,15 @@ class BackupRotator:
 		best_ctime = None
 		for item in items:
 			
-			ctime = self._detect_item_creation_date(config, item)
+			ctime = Util.detect_item_creation_date(config, item)
 			if best_ctime is None or ctime < best_ctime:
 				best_ctime = ctime
 				best_item = item
 		
-		age_seconds = self._detect_item_age_seconds(config, best_item)
+		age_seconds = Util.detect_item_age_seconds(config, best_item)
 		age_string = Util.seconds_to_time_string(age_seconds)
 
 		return best_item, best_ctime, age_seconds, age_string
-	
-	@staticmethod
-	def _detect_item_creation_date(config: ConfigFile, item: Path) -> datetime.datetime:
-		
-		if config.date_detection == "file":
-			ctime = datetime.datetime.fromtimestamp(
-				item.stat().st_ctime
-			)
-		
-		else:
-			raise AssertionError(
-				f"Unsupported date-detection option: {config.date_detection}"
-			)
-		
-		return ctime
-	
-	def _detect_item_age_seconds(self, config: ConfigFile, item: Path) -> float:
-		
-		now = datetime.datetime.now()
-		
-		ctime = self._detect_item_creation_date(config=config, item=item)
-		delta = now - ctime.now()
-		
-		return delta.seconds
-	
-	def _detect_item_age_days(self, config: ConfigFile, item: Path) -> int:
-		
-		age_seconds = self._detect_item_age_seconds(
-			config=config, item=item
-		)
-		age_days = int(age_seconds / 86400)
-		
-		return age_days
 	
 	def _remove_item(self, config: ConfigFile, path: Path):
 		

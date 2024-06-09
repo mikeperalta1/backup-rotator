@@ -1,5 +1,9 @@
 
 
+from domain.config.ConfigFile import ConfigFile
+
+
+import datetime
 from pathlib import Path
 
 
@@ -21,6 +25,66 @@ class Util:
 				files_paths.append(file_path)
 		
 		return files_paths
+	
+	@staticmethod
+	def detect_item_creation_date(config: ConfigFile, item: Path) -> datetime.datetime:
+		
+		stat = None
+		
+		if config.date_detection == "file":
+			
+			# Try for the most accurate stat
+			# First one that raises will just break the block, obv
+			try:
+				stat = item.stat().st_ctime
+				# print("got ctime")
+				stat = item.stat().st_mtime
+				# print("got mtime")
+				stat = item.stat().st_birthtime
+				# print("got btime")
+			except AttributeError:
+				pass
+			
+		else:
+			raise AssertionError(
+				f"Unsupported date-detection option: {config.date_detection}"
+			)
+		
+		stamp = datetime.datetime.fromtimestamp(
+			stat
+		)
+		# print("Stat:", stat)
+		# print("Stamp:", stamp)
+		# print(item.name, "==>", stamp)
+		
+		return stamp
+	
+	@staticmethod
+	def detect_item_age_seconds(config: ConfigFile, item: Path) -> float:
+		
+		now = datetime.datetime.now()
+		
+		ctime = Util.detect_item_creation_date(config=config, item=item)
+		delta = now - ctime
+		seconds = delta.seconds
+		
+		# print(item.name, "==>", seconds, f"({ctime})")
+		# print(">", "Now was:", now)
+		# print(">", "ctime was:", ctime)
+		# print(">", "Delta was:", delta)
+		# print(">", "Seconds was:", delta.total_seconds())
+		
+		return delta.total_seconds()
+	
+	@staticmethod
+	def detect_item_age_days(config: ConfigFile, item: Path) -> int:
+		
+		age_seconds = Util.detect_item_age_seconds(
+			config=config, item=item
+		)
+		age_days = int(age_seconds / 86400)
+		
+		return age_days
 	
 	@staticmethod
 	def seconds_to_time_string(seconds: float):
