@@ -13,59 +13,64 @@ Releasing to the public under the GNU GENERAL PUBLIC LICENSE v3 (See LICENSE fil
 """
 
 
-from domain.Logger import Logger
 from domain.config.Config import Config
+from domain.config.ConfigFile import ConfigFile
+from domain.Logger import Logger
 from domain.Util import Util
 
 
 import datetime
 from pathlib import Path
 import shutil
-import yaml
 
 
 class BackupRotator:
 	
 	def __init__(
 			self,
+			config_paths: [Path] = None,
 			debug: bool = False,
 			systemd: bool = False,
 			write_to_syslog: bool = False
 	):
-		
 		self.__logger = Logger(
 			name=type(self).__name__,
 			debug=debug,
 			systemd=systemd,
 			write_to_syslog=write_to_syslog,
 		)
-		self.__config_helper = Config(
-			logger=self.__logger
+		
+		self.__config = Config(
+			logger=self.__logger,
+			config_files_paths=config_paths
 		)
 		
-		self.__dry_run = False
-		self.__configs = []
-		self.__config_paths = []
+		self.__global_dry_run = True
 		self.__calculated_actions = []
 	
-	def run(self, configs, dry_run: bool = False):
+	def run(self, global_dry_run: bool = True):
 		
-		self.info("Begin")
+		self.info("Begin rotating")
 		
-		self.__dry_run = dry_run
-		self.__config_paths = configs
-		
-		self._consume_configs(self.__config_paths)
+		self.__global_dry_run = global_dry_run
+		if self.__global_dry_run:
+			self.info(f"Running as a dry run, globally.")
+		else:
+			self.info(f"Won't run as a global dry run.")
 		
 		# Rotate once per config
-		for config_index in range(len(self.__configs)):
+		config_file_index = -1
+		for config_file in self.__config.config_files:
 			
-			#
-			config = self.__configs[config_index]
+			config_file: ConfigFile
+			config_file_index += 1
 			
-			#
-			self.info(f"Rotating for config {config_index + 1} of {len(self.__configs)} : {config['__path']}")
-			self._do_rotate(config)
+			self.info(
+				f"Rotating for config {config_file_index + 1} of {len(self.__config.config_files)}"
+				f" : {config_file.path}"
+				f"\n{config_file}"
+			)
+			self._do_rotate(config_file)
 	
 	@staticmethod
 	def current_time():
@@ -86,51 +91,34 @@ class BackupRotator:
 	def error(self, s):
 		self.__logger.error(s)
 	
-	def _consume_configs(self, paths: [Path] = None):
+	def _do_rotate(self, config: ConfigFile):
 		
-		configs = self.__config_helper.gather_valid_configs(paths=paths)
+		self.info(
+			f"Rotating for config: {config.path}"
+		)
+		if config.dry_run:
+			self.info(
+				f"Config {config.path.name} is set for a dry run (no deleting)."
+			)
+		else:
+			self.info(
+				f"Config {config.path.name} is not set for a dry run (will delete)."
+			)
 		
-		for config in configs:
+		self._rotate_paths(config=config)
+	
+	def _rotate_paths(self, config: ConfigFile):
+		
+		paths = config.rotatable_paths
+		self.info(f"Begin rotating {len(paths)} paths")
+		
+		for path in paths:
 			
-			self._consume_config(path=config)
-		
-	def _consume_config(self, path: Path):
-		
-		self.debug(f"Consuming config: {path}")
-		assert path.is_file(), (
-			f"Cannot consume config file because it isn't a file: {path}"
-		)
-		
-		# Open the file
-		self.debug(f"Opening config file for consumption: {path}")
-		f = open(str(path))
-		if not f:
-			raise Exception(f"Unable to open config file: {path}")
-		
-		# Parse
-		config_raw = yaml.safe_load(f)
-		assert config_raw is not None, (
-			f"Config file seems to be null or empty: {path}"
-		)
-		
-		# Add its own path
-		config_raw["__path"] = path
-		
-		# Consume to internal
-		self.__configs.append(config_raw)
-		self.info(f"Consumed config from path: {path}")
+			path: Path
+			
+			self._rotate_path(config=config, path=path)
 	
-	def _do_rotate(self, config):
-		
-		self._rotate_paths(config)
-	
-	def _rotate_paths(self, config):
-		
-		self.info("Begin rotating " + str(len(config["paths"])) + " paths")
-		for path in config["paths"]:
-			self._rotate_path(config, path)
-	
-	def _rotate_path(self, config, path: Path):
+	def _rotate_path(self, config: ConfigFile, path: Path):
 		
 		assert path.is_dir(), (
 			f"Path should be a directory: {path}"
@@ -141,61 +129,63 @@ class BackupRotator:
 		)
 		
 		found_any_rotation_keys = False
-		if "maximum-items" in config.keys():
+		if config.maximum_items:
 			
 			found_any_rotation_keys = True
 			
 			self._rotate_path_for_maximum_items(
 				config=config,
 				path=path,
-				max_items=config["maximum-items"]
 			)
 		
-		if "maximum-age" in config.keys():
+		if config.maximum_age:
 			
 			found_any_rotation_keys = True
 			
 			self._rotate_path_for_maximum_age(
 				config=config,
 				path=path,
-				max_age_days=config["maximum-age"]
 			)
 		
 		assert found_any_rotation_keys is True, (
 			"Config needs one of the following keys: \"maximum-items\""
 		)
 	
-	def _rotate_path_for_maximum_items(self, config, path: Path, max_items: int):
+	def _rotate_path_for_maximum_items(self, config: ConfigFile, path: Path):
 		
 		assert path.is_dir(), f"Path should be a directory: {path}"
 		
-		self.info(f"Rotating path for a maximum of {max_items} items: {path}")
+		self.info(
+			f"Rotating path for a maximum of {config.maximum_items} items: {path}"
+		)
 		
-		children = self._gather_rotation_candidates(config, path)
+		candidate_items = self._gather_rotation_candidates(config=config, path=path)
 		
-		minimum_items = self._determine_minimum_items(config)
+		minimum_items = self._determine_minimum_items(config=config)
 		
 		# Do we need to rotate anything out?
-		if len(children) < minimum_items:
+		if len(candidate_items) < minimum_items:
+			
 			self.info(
-				f"Path only has {len(children)} items"
+				f"Path only has {len(candidate_items)} items"
 				f", which does not meet the minimum threshold of {minimum_items} items."
 				" Won't rotate this path."
 			)
 			return
-		elif len(children) <= max_items:
+		
+		elif len(candidate_items) <= config.maximum_items:
 			self.info(
-				f"Path only has {len(children)} items"
-				f", but needs more than {max_items} for rotation"
+				f"Path only has {len(candidate_items)} items"
+				f", but needs more than {config.maximum_items} for rotation"
 				"; Won't rotate this path."
 			)
 			return
 		
-		self.info(f"Found {len(children)} items to examine")
+		self.info(f"Found {len(candidate_items)} items to examine")
 		
 		#
-		maximum_purge_count = len(children) - minimum_items
-		purge_count = len(children) - max_items
+		maximum_purge_count = len(candidate_items) - minimum_items
+		purge_count = len(candidate_items) - config.maximum_items
 		self.info(f"Want to purge {purge_count} items")
 		
 		if purge_count > maximum_purge_count:
@@ -206,16 +196,16 @@ class BackupRotator:
 			)
 			purge_count = maximum_purge_count
 		
-		children_to_purge = []
+		items_to_purge = []
 		for purge_index in range(purge_count):
 			
 			#
 			item_to_purge, item_ctime, item_age_seconds, item_age = self._pick_oldest_item(
-				config, children
+				config=config, items=candidate_items
 			)
 			item_to_purge: Path
 			
-			children.remove(item_to_purge)
+			candidate_items.remove(item_to_purge)
 			
 			self.info(
 				f"Found next item to purge: ({purge_index + 1})"
@@ -224,104 +214,101 @@ class BackupRotator:
 			)
 			
 			#
-			children_to_purge.append(item_to_purge)
-
+			items_to_purge.append(item_to_purge)
+		
 		#
 		self.info("Removing items")
-		for child_to_purge in children_to_purge:
+		for item_to_purge in items_to_purge:
 			
-			child_to_purge: Path
+			item_to_purge: Path
 			
-			self.debug(f"Purging item: {child_to_purge.name}")
+			self.debug(f"Purging item: {item_to_purge.name}")
 			
-			self._remove_item(config, child_to_purge)
+			self._remove_item(config=config, path=item_to_purge)
 	
-	def _rotate_path_for_maximum_age(self, config, path: Path, max_age_days: int):
+	def _rotate_path_for_maximum_age(self, config: ConfigFile, path: Path):
 		
 		assert path.is_dir(), f"Path should be a directory: {path}"
 		
 		self.info(
-			f"Rotating path for max age of {max_age_days} days: {path}"
+			f"Rotating path for max age of {config.maximum_age} days: {path}"
 		)
 		
-		children = self._gather_rotation_candidates(config, path)
-		minimum_items = self._determine_minimum_items(config)
+		candidate_items = self._gather_rotation_candidates(config=config, path=path)
+		minimum_items = self._determine_minimum_items(config=config)
 		
 		# Do we need to rotate anything out?
-		if len(children) < minimum_items:
+		if len(candidate_items) < minimum_items:
 			self.info(
-				f"Path only has {len(children)} items"
+				f"Path only has {len(candidate_items)} items"
 				f", which does not meet the minimum threshold of {minimum_items} items."
 				f" Won't rotate this path."
 			)
 			return
 		
 		self.info(
-			f"Examining {len(children)} items for deletion"
+			f"Examining {len(candidate_items)} items for deletion"
 		)
-		children_to_delete = []
-		for child in children:
+		items_to_delete = []
+		for item in candidate_items:
 			
-			age_seconds = self._detect_item_age_seconds(config, child)
-			age_days = self._detect_item_age_days(config, child)
+			age_seconds = self._detect_item_age_seconds(config=config, item=item)
+			age_days = self._detect_item_age_days(config=config, item=item)
 			age_formatted = Util.seconds_to_time_string(age_seconds)
 			
-			if age_days > max_age_days:
+			if age_days > config.maximum_age:
 				self.info(
-					f"[Old enough    ] {child.name} ({age_formatted})"
+					f"[Old enough    ] {item.name} ({age_formatted})"
 				)
-				children_to_delete.append(child)
+				items_to_delete.append(item)
 			else:
 				self.info(
-					f"[Not Old enough] {child.name} ({age_formatted})"
+					f"[Not Old enough] {item.name} ({age_formatted})"
 				)
 		
-		if len(children_to_delete) > 0:
+		if len(items_to_delete) > 0:
 			
 			self.info("Removing old items ...")
 			
-			for child_to_delete in children_to_delete:
-				self._remove_item(config, child_to_delete)
+			for item in items_to_delete:
+				self._remove_item(config, item)
 			
 		else:
 			self.info("No old items to remove")
 	
-	def _gather_rotation_candidates(self, config, path: Path):
+	def _gather_rotation_candidates(self, config: ConfigFile, path: Path) -> [Path]:
 		
 		self.debug(f"Begin gathering rotation candidates for: {path}")
 		
 		candidates: [Path] = []
-		
-		if "target-type" not in config.keys():
-			raise Exception("Please provide the configuration key: target-type")
 		
 		for item_name in path.iterdir():
 			
 			item_path = path / item_name
 			self.debug(f"Found an item: {item_name} ==> {item_path}")
 			
-			if config["target-type"] == "file":
+			if config.target_type == "file":
 				
 				if not item_path.is_file():
 					self.debug(f"Not a file; Skipping: {item_name}")
 					continue
 			
-			elif config["target-type"] == "directory":
+			elif config.target_type == "directory":
 				
 				if not item_path.is_dir():
 					self.debug(f"Not a directory; Skipping: {item_name}")
 					continue
-				
+			
 			else:
 				raise Exception(
-					"Configuration key \"target-type\" must be \"file\" or \"directory\""
+					f"Unsupported target type: {config.target_type}"
 				)
 			
 			candidates.append(item_path)
 		
 		return candidates
 	
-	def _pick_oldest_item(self, config, items) -> (Path, float, float, str):
+	def _pick_oldest_item(self, config: ConfigFile, items: [Path]) -> (Path, float, float, str):
 		
 		best_item = None
 		best_ctime = None
@@ -338,69 +325,65 @@ class BackupRotator:
 		return best_item, best_ctime, age_seconds, age_string
 	
 	@staticmethod
-	def _detect_item_date(config, item: Path) -> datetime.datetime:
+	def _detect_item_date(config: ConfigFile, item: Path) -> datetime.datetime:
 		
-		assert "date-detection" in config.keys(), (
-			"Please provide config key: \"date-detection\""
-		)
-		detection = config["date-detection"]
-		
-		if detection == "file":
+		if config.date_detection == "file":
 			ctime = datetime.datetime.fromtimestamp(
 				item.stat().st_ctime, tz=datetime.timezone.utc
 			)
 		
 		else:
 			raise AssertionError(
-				f"Invalid value for \"date-detection\""
-				"; Should be one of [file]: {detection}"
+				f"Unsupported date-detection option: {config.date_detection}"
 			)
 		
 		return ctime
 	
-	def _detect_item_age_seconds(self, config, item: Path) -> float:
+	def _detect_item_age_seconds(self, config: ConfigFile, item: Path) -> float:
 		
 		now = datetime.datetime.now()
 		
-		ctime = self._detect_item_date(config, item)
+		ctime = self._detect_item_date(config=config, item=item)
 		delta = now - ctime.now()
 		
 		return delta.seconds
 	
-	def _detect_item_age_days(self, config, item: Path) -> int:
+	def _detect_item_age_days(self, config: ConfigFile, item: Path) -> int:
 		
-		age_seconds = self._detect_item_age_seconds(config, item)
+		age_seconds = self._detect_item_age_seconds(
+			config=config, item=item
+		)
 		age_days = int(age_seconds / 86400)
-
+		
 		return age_days
 	
-	def _remove_item(self, config, path: Path):
+	def _remove_item(self, config: ConfigFile, path: Path):
 		
 		if path.is_file():
 			
-			self._remove_file(config, path)
+			self._remove_file(config=config, file_path=path)
 			
 		elif path.is_dir():
 			
-			self._remove_directory(config, path)
+			self._remove_directory(config=config, dir_path=path)
 			
 		else:
 			raise AssertionError(
 				f"Don't know how to remove this item: {path}"
 			)
 	
-	def _remove_file(self, config, file_path: Path):
+	def _remove_file(self, config: ConfigFile, file_path: Path):
 		
 		if not file_path.is_file():
 			raise Exception(
 				f"Tried to remove a file, but this path isn't a file: {file_path}"
 			)
 		
-		if self.__dry_run:
+		if self.__global_dry_run:
 			
 			self.info(f"Won't purge file during global-level dry run: {file_path}")
 			
-		elif "dry-run" in config.keys() and config["dry-run"] is True:
+		elif config.dry_run is True:
 			
 			self.info(f"Won't purge file during config-level dry run: {file_path}")
 			
@@ -408,7 +391,7 @@ class BackupRotator:
 			self.info(f"Purging file: {file_path}")
 			file_path.unlink()
 	
-	def _remove_directory(self, config, dir_path: Path):
+	def _remove_directory(self, config: ConfigFile, dir_path: Path):
 		
 		if not dir_path.is_dir():
 			raise Exception(
@@ -416,11 +399,11 @@ class BackupRotator:
 				f", but this path isn't a directory: {dir_path}"
 			)
 		
-		if self.__dry_run:
+		if self.__global_dry_run:
 			
 			self.info(f"Won't purge directory during global-level dry run: {dir_path}")
 			
-		elif "dry-run" in config.keys() and config["dry-run"] is True:
+		elif config.dry_run:
 			
 			self.info(f"Won't purge directory during config-level dry run: {dir_path}")
 			
@@ -433,9 +416,9 @@ class BackupRotator:
 		
 		minimum_items = 0
 		
-		if "minimum-items" in config.keys():
+		if config.minimum_items is not None:
 			
-			minimum_items = config["minimum-items"]
+			minimum_items = config.minimum_items
 			
 			self.info(
 				f"Won't delete anything unless a minimum of {minimum_items} items were found"
@@ -443,7 +426,7 @@ class BackupRotator:
 		
 		else:
 			self.info(
-				"No value found for \"minimum-items\""
+				"No minimum number of items specified"
 				"; Will not enforce minimum item constraint."
 			)
 		

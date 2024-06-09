@@ -44,30 +44,33 @@ def main():
 	
 	parser.add_argument(
 		"--config", "-c",
-		dest="config_files",
+		dest="config_paths",
 		default=[],
 		action="append",
 		type=str,
-		help="Specify a configuration file. Can be called multiple times."
+		help="Specify a configuration file or configuration directory. Can be called multiple times."
 	)
 	parser.add_argument(
 		"--dry-run", "-d",
-		dest="dry_run",
+		dest="global_dry_run",
 		default=False,
 		action="store_true",
-		help="Only perform an analysis; Don't delete anything."
+		help=(
+			"Only perform an analysis;"
+			" Don't delete anything no matter what configs say (configs can specify dry run, too)."
+		)
 	)
 	
 	args = parser.parse_args()
 	
 	rotator = BackupRotator(
+		config_paths=args.config_paths,
 		debug=args.debug,
 		systemd=args.systemd,
 		write_to_syslog=args.write_to_syslog,
 	)
 	rotator.run(
-		configs=args.config_files,
-		dry_run=args.dry_run
+		global_dry_run=args.global_dry_run
 	)
 	
 
