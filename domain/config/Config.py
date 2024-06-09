@@ -1,8 +1,11 @@
 
 
 from domain.Logger import Logger
+from domain.Util import Util
 
-import os
+
+# import os
+from pathlib import Path
 
 
 class Config:
@@ -12,37 +15,24 @@ class Config:
 		"yml"
 	]
 	
-	def __init__(self, logger):
+	def __init__(self, logger: Logger):
 
 		self.__logger = logger
 		self.__valid_extensions = self.__DEFAULT_VALID_EXTENSIONS
 	
 	def debug(self, s):
 		self.__logger.debug(f"[{type(self).__name__}] {s}")
+	
 	def info(self, s):
 		self.__logger.info(f"[{type(self).__name__}] {s}")
+	
 	def warn(self, s):
-		self.__logger.warn(f"[{type(self).__name__}] {s}")
+		self.__logger.warning(f"[{type(self).__name__}] {s}")
+		
 	def error(self, s):
 		self.__logger.error(f"[{type(self).__name__}] {s}")
 	
-	@staticmethod
-	def get_dir_files_recursive(path: str):
-		
-		files_paths = []
-		
-		for dir_path, dirnames, filenames in os.walk(path):
-			
-			for file_name in filenames:
-				
-				file_path = os.path.join(dir_path, file_name)
-				files_paths.append(file_path)
-				# print("Uhm yeah", dir_path, "--", dirnames, "--", file_name)
-				# print("==>", file_path)
-
-		return files_paths
-	
-	def gather_valid_configs(self, paths: list=None):
+	def gather_valid_configs(self, paths: list = None) -> [Path]:
 		
 		assert paths is not None, "Config paths cannot be None"
 		assert len(paths) > 0, "Must provide at least one config file path"
@@ -54,25 +44,42 @@ class Config:
 		not_configs = []
 		
 		# First gather all files that are potential configs
-		for path in paths:
+		for path_str in paths:
+			
+			path = Path(path_str)
 			
 			self.info(f"Inspecting path: {path}")
 			
-			if os.path.isfile(path):
-				self.debug(f"Path is a file; Adding directly to potential config candidates: {path}")
+			if not path.exists():
+			
+				self.error(f"Path doesn't exist: {path}")
+			
+			if path.is_file():
+				
+				self.debug(
+					f"Path is a file; Adding directly to potential config candidates: {path}"
+				)
 				file_paths.append(path)
 			
-			elif os.path.isdir(path):
-				self.debug(f"Path is a dir; Scanning recursively for potential config candidate files: {path}")
-				for file_path in Config.get_dir_files_recursive(path=path):
+			elif path.is_dir():
+				
+				self.debug(
+					f"Path is a dir;"
+					" Scanning recursively for potential config candidate files: {path}"
+				)
+				
+				for file_path in Util.get_dir_files_recursive(path=path):
 					self.info(f"> Candidate file: {file_path}")
 					file_paths.append(file_path)
 			
 			else:
-				raise AssertionError(f"Don't know how to handle path that isn't a file or dir: {path}")
+				raise AssertionError(
+					f"Don't know how to handle path that isn't a file or dir: {path}"
+				)
 		
 		# Now, filter for files with valid YAML extensions
 		for file_path in file_paths:
+			
 			if self.check_file_extension(file_path=file_path, extensions=None):
 				configs.append(file_path)
 			else:
@@ -94,20 +101,20 @@ class Config:
 		
 		return configs
 	
-	def check_file_extension(self, file_path, extensions: list=None):
+	def check_file_extension(self, file_path: Path, extensions: list = None) -> bool:
 		
 		if extensions is None:
 			extensions = self.__valid_extensions
 		
-		file_name, file_extension = os.path.splitext(file_path)
+		file_extension = file_path.suffix
+		
+		# Strip preceding dot from extension
 		if len(file_extension) > 0 and file_extension[0] == ".":
 			file_extension = file_extension[1:]
 		file_extension = file_extension.lower()
-
+		
 		for valid_extension in extensions:
-			#print(file_name, "---", file_extension, "---", valid_extension)
 			if file_extension == valid_extension:
 				return True
 		
 		return False
-

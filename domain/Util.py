@@ -1,9 +1,26 @@
 
 
+from pathlib import Path
+
+
 class Util:
 	
 	def __init__(self):
 		pass
+	
+	@staticmethod
+	def get_dir_files_recursive(path: Path) -> [Path]:
+		
+		files_paths = []
+		for dir_path, dirs_names, filenames in path.walk():
+			
+			for file_name in filenames:
+				
+				file_path = dir_path / file_name
+				
+				files_paths.append(file_path)
+		
+		return files_paths
 	
 	@staticmethod
 	def seconds_to_time_string(seconds: float):
@@ -28,13 +45,18 @@ class Util:
 		
 		s_parts = []
 		for unit_label in dt_map.keys():
+			
 			unit_seconds = dt_map[unit_label]
+			
 			if seconds >= unit_seconds:
+				
 				unit_count = int(seconds / unit_seconds)
-				s_parts.append("{} {}{}".format(
-					unit_count, unit_label,
-					"" if unit_count == 1 else "s"
-				))
+				
+				unit_plural = "" if unit_count == 1 else "s"
+				s_parts.append(
+					f"{unit_count} {unit_label}{unit_plural}"
+				)
+				
 				seconds -= unit_seconds * unit_count
 		
 		s = ", ".join(s_parts)
