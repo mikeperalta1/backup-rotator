@@ -152,8 +152,11 @@ class BackupRotator:
 			)
 			return
 		
-		candidate_items = self._gather_rotation_candidates(config=config, path=path)
+		self.info(
+			f"Will gather rotation candidates for maximum number of items."
+		)
 		
+		candidate_items = self._gather_rotation_candidates(config=config, path=path)
 		minimum_items = self._determine_minimum_items(config=config)
 		
 		# Do we need to rotate anything out?
@@ -179,7 +182,9 @@ class BackupRotator:
 		#
 		maximum_purge_count = len(candidate_items) - minimum_items
 		purge_count = len(candidate_items) - config.maximum_items
-		self.info(f"Want to purge {purge_count} items")
+		self.info(
+			f"Want to purge {purge_count} items to stay under maximum of {config.maximum_items}"
+		)
 		
 		if purge_count > maximum_purge_count:
 			self.info(
@@ -201,7 +206,7 @@ class BackupRotator:
 			candidate_items.remove(item_to_purge)
 			
 			self.info(
-				f"Found next item to purge: ({purge_index + 1})"
+				f"Will purge: ({purge_index + 1})"
 				f" {item_to_purge.name}"
 				f" ({item_age})"
 			)
@@ -233,6 +238,9 @@ class BackupRotator:
 			)
 			return
 		
+		self.info(
+			f"Will gather rotation candidates for maximum age, in days."
+		)
 		candidate_items = self._gather_rotation_candidates(config=config, path=path)
 		minimum_items = self._determine_minimum_items(config=config)
 		
@@ -304,6 +312,8 @@ class BackupRotator:
 			
 			candidates.append(item)
 		
+		self.__logger.info(f"Returning {len(candidates)} potential candidates to remove.")
+		
 		return candidates
 	
 	def _pick_oldest_item(self, config: ConfigFile, items: [Path]) -> (Path, float, float, str):
@@ -346,11 +356,11 @@ class BackupRotator:
 		
 		if self.__global_dry_run:
 			
-			self.info(f"Won't purge file during global-level dry run: {file_path}")
+			self.info(f"(Global Dry Run) {file_path}")
 			
 		elif config.dry_run is True:
 			
-			self.info(f"Won't purge file during config-level dry run: {file_path}")
+			self.info(f"(Config Dry Run) {file_path}")
 			
 		else:
 			self.info(f"Purging file: {file_path}")
@@ -366,11 +376,11 @@ class BackupRotator:
 		
 		if self.__global_dry_run:
 			
-			self.info(f"Won't purge directory during global-level dry run: {dir_path}")
+			self.info(f"(Global Dry Run) {dir_path}")
 			
 		elif config.dry_run:
 			
-			self.info(f"Won't purge directory during config-level dry run: {dir_path}")
+			self.info(f"(Config Dry Run) {dir_path}")
 			
 		else:
 			
