@@ -93,9 +93,13 @@ class ConfigFile:
 		self.info(f"Loaded config from path: {self.__path}")
 	
 	def _consume(self):
-	
-		try:
 		
+		try:
+			
+			assert isinstance(self.__data, dict), (
+				f"Config file should be a dict!"
+			)
+			
 			if "options" in self.__data.keys():
 				
 				self.info(f"Found options setting")
