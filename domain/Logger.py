@@ -4,9 +4,10 @@ from logging.handlers import SysLogHandler
 
 import sys
 
+
 class Logger:
 
-	def __init__(self, name: str, debug: bool=False):
+	def __init__(self, name: str, debug: bool = False):
 		
 		self.__name = name
 		
@@ -19,8 +20,14 @@ class Logger:
 		
 		self.__logger.setLevel(level)
 		
-		formatter = logging.Formatter('[%(name)s][%(levelname)s] %(message)s')
-		formatter_full = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] %(message)s')
+		formatter = logging.Formatter(
+			fmt="[{name}][{levelname:<7}] {message}",
+			style='{'
+		)
+		formatter_full = logging.Formatter(
+			fmt="[{asctime}][{name}][{levelname:<7}] {message}",
+			style='{'
+		)
 		
 		# Console output / stream handler (STDOUT)
 		handler = logging.StreamHandler(
@@ -48,17 +55,22 @@ class Logger:
 		self.__logger.addHandler(handler)
 		
 		# This is annoying inside cron
-		# self.debug("Test debug log")
-		# self.info("Test info log")
-		# self.warn("Test warn log")
-		# self.error("Test error log")
-		
+		self.debug("Test debug log")
+		self.info("Test info log")
+		self.warn("Test warn log")
+		self.error("Test error log")
 	
 	def debug(self, s):
 		self.__logger.debug(s)
+
 	def info(self, s):
 		self.__logger.info(s)
+
 	def warn(self, s):
-		self.__logger.warn(s)
+		self.__logger.warning(s)
+
+	def warning(self, s):
+		self.__logger.warning(s)
+	
 	def error(self, s):
 		self.__logger.error(s)
