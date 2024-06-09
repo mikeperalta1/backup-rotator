@@ -7,13 +7,26 @@ import sys
 
 class Logger:
 
-	def __init__(self, name: str, debug: bool = False):
+	def __init__(
+			self,
+			name: str,
+			debug: bool = False,
+			write_to_syslog: bool = False,
+			systemd: bool = False
+	):
 		
 		self.__name = name
+		self.__debug = debug
+		self.__write_to_syslog = write_to_syslog
+		self.__systemd = systemd
+		
+		self._init_logger()
+		
+	def _init_logger(self):
 		
 		self.__logger = logging.getLogger(self.__name)
-
-		if debug:
+		
+		if self.__debug:
 			level = logging.DEBUG
 		else:
 			level = logging.INFO
@@ -35,7 +48,9 @@ class Logger:
 		)
 		handler.setLevel(level)
 		handler.addFilter(lambda entry: entry.levelno <= logging.INFO)
-		handler.setFormatter(formatter_full)
+		handler.setFormatter(
+			formatter if self.__systemd else formatter_full
+		)
 		self.__logger.addHandler(handler)
 		
 		# Console output / stream handler (STDERR)
@@ -43,16 +58,19 @@ class Logger:
 			stream=sys.stderr
 		)
 		handler.setLevel(logging.WARNING)
-		handler.setFormatter(formatter_full)
+		handler.setFormatter(
+			formatter if self.__systemd else formatter_full
+		)
 		self.__logger.addHandler(handler)
 		
 		# Syslog handler
-		handler = SysLogHandler(
-			address="/dev/log"
-		)
-		handler.setLevel(level)
-		handler.setFormatter(formatter)
-		self.__logger.addHandler(handler)
+		if self.__write_to_syslog:
+			handler = SysLogHandler(
+				address="/dev/log"
+			)
+			handler.setLevel(level)
+			handler.setFormatter(formatter)
+			self.__logger.addHandler(handler)
 		
 		# This is annoying inside cron
 		self.debug("Test debug log")

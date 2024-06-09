@@ -28,10 +28,22 @@ import yaml
 
 class BackupRotator:
 	
-	def __init__(self, debug:bool = False):
+	def __init__(
+			self,
+			debug: bool = False,
+			systemd: bool = False,
+			write_to_syslog: bool = False
+	):
 		
-		self.__logger = Logger(name=type(self).__name__, debug=debug)
-		self.__config_helper = Config(logger=self.__logger)
+		self.__logger = Logger(
+			name=type(self).__name__,
+			debug=debug,
+			systemd=systemd,
+			write_to_syslog=write_to_syslog,
+		)
+		self.__config_helper = Config(
+			logger=self.__logger
+		)
 		
 		self.__dry_run = False
 		self.__configs = []
