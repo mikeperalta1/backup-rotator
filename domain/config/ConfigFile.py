@@ -192,9 +192,13 @@ class ConfigFile:
 					)
 					self.__date_detection = date_detection
 				else:
-					self.warning(
+					self.error(
 						f"Option date-detection not found; Will use default: {self.__date_detection}"
 					)
+					raise AssertionError(
+						f"Option date-detection is required."
+					)
+				
 			else:
 				self.error(f"No options key found!")
 				raise AssertionError(f"No options key found!")
