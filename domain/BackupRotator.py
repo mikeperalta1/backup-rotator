@@ -6,7 +6,7 @@ Mike's Backup Rotator
 
 A simple script to help automatically rotate backup files
 
-Copyright 2023 Mike Peralta; All rights reserved
+Copyright 2024 Mike Peralta; All rights reserved
 
 Releasing to the public under the GNU GENERAL PUBLIC LICENSE v3 (See LICENSE file for more)
 
@@ -14,14 +14,14 @@ Releasing to the public under the GNU GENERAL PUBLIC LICENSE v3 (See LICENSE fil
 
 
 from domain.Logger import Logger
-from domain.Config import Config
+from domain.config.Config import Config
+from domain.Util import Util
 
 
 import datetime
 import os
 # import pprint
 import shutil
-import sys
 import time
 import yaml
 
@@ -202,7 +202,7 @@ class BackupRotator:
 			
 			age_seconds = self._detect_item_age_seconds(config, child)
 			age_days = self._detect_item_age_days(config, child)
-			age_formatted = self.seconds_to_time_string(age_seconds)
+			age_formatted = Util.seconds_to_time_string(age_seconds)
 			child_basename = os.path.basename(child)
 			
 			if age_days > max_age_days:
@@ -261,7 +261,7 @@ class BackupRotator:
 				best_item = item
 		
 		age_seconds = self._detect_item_age_seconds(config, best_item)
-		age_string = self.seconds_to_time_string(age_seconds)
+		age_string = Util.seconds_to_time_string(age_seconds)
 
 		return best_item, best_ctime, age_seconds, age_string
 	
@@ -292,42 +292,7 @@ class BackupRotator:
 		age_days = int(age_seconds / 86400)
 
 		return age_days
-
-	def seconds_to_time_string(self, seconds: float):
-		
-		if isinstance(seconds, float):
-			pass
-		elif isinstance(seconds, int):
-			seconds = float * 1.0
-		else:
-			raise AssertionError("Seconds must be an int or float")
-		
-		# Map
-		map = {
-			"year": 31536000.0,
-			"month": 2592000.0,
-			"week": 604800.0,
-			"day": 86400.0,
-			"hour": 3600.0,
-			"minute": 60.0,
-			"second": 1.0
-		}
-		
-		s_parts = []
-		for unit_label in map.keys():
-			unit_seconds = map[unit_label]
-			if seconds >= unit_seconds:
-				unit_count = int(seconds / unit_seconds)
-				s_parts.append("{} {}{}".format(
-					unit_count, unit_label,
-					"" if unit_count == 1 else "s"
-				))
-				seconds -= unit_seconds * unit_count
-		
-		s = ", ".join(s_parts)
-		
-		return s
-
+	
 	def _remove_item(self, config, path):
 		
 		if os.path.isfile(path):
