@@ -31,13 +31,17 @@ class BackupRotator:
 			config_paths: [Path] = None,
 			debug: bool = False,
 			systemd: bool = False,
-			write_to_syslog: bool = False
+			write_to_syslog: bool = False,
+			do_test_logs: bool = True,
 	):
+		self.__do_test_logs = do_test_logs
+		
 		self.__logger = Logger(
 			name=type(self).__name__,
 			debug=debug,
 			systemd=systemd,
 			write_to_syslog=write_to_syslog,
+			do_test_logs=do_test_logs,
 		)
 		
 		self.__config = Config(

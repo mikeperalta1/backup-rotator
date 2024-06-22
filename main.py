@@ -43,6 +43,25 @@ def main():
 	)
 	
 	parser.add_argument(
+		"--no-test-logs",
+		default=True,
+		dest="do_test_logs",
+		action="store_false",
+		help=(
+			"Pass if you do not want to see test logs for all log levels."
+		)
+	)
+	parser.add_argument(
+		"--test-logs",
+		default=True,
+		dest="do_test_logs",
+		action="store_true",
+		help=(
+			"Pass if you want to see test logs for all log levels."
+		)
+	)
+	
+	parser.add_argument(
 		"--config", "-c",
 		dest="config_paths",
 		default=[],
@@ -68,6 +87,7 @@ def main():
 		debug=args.debug,
 		systemd=args.systemd,
 		write_to_syslog=args.write_to_syslog,
+		do_test_logs=args.do_test_logs,
 	)
 	rotator.run(
 		global_dry_run=args.global_dry_run

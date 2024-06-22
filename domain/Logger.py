@@ -12,13 +12,15 @@ class Logger:
 			name: str,
 			debug: bool = False,
 			write_to_syslog: bool = False,
-			systemd: bool = False
+			systemd: bool = False,
+			do_test_logs: bool = True,
 	):
 		
 		self.__name = name
 		self.__debug = debug
 		self.__write_to_syslog = write_to_syslog
 		self.__systemd = systemd
+		self.__do_test_logs = do_test_logs
 		
 		self._init_logger()
 		
@@ -73,10 +75,11 @@ class Logger:
 			self.__logger.addHandler(handler)
 		
 		# This is annoying inside cron
-		self.debug("Test debug log")
-		self.info("Test info log")
-		self.warn("Test warn log")
-		self.error("Test error log")
+		if self.__do_test_logs:
+			self.debug("Test debug log")
+			self.info("Test info log")
+			self.warn("Test warn log")
+			self.error("Test error log")
 	
 	def debug(self, s):
 		self.__logger.debug(s)
