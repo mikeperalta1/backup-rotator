@@ -44,7 +44,7 @@ def main():
 	
 	parser.add_argument(
 		"--no-test-logs",
-		default=True,
+		default=False,
 		dest="do_test_logs",
 		action="store_false",
 		help=(
