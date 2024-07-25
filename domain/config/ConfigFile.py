@@ -18,6 +18,10 @@ class ConfigFile:
 		"file"
 	]
 	
+	__DEFAULT_MINIMUM_ITEMS = 0
+	__DEFAULT_MAXIMUM_ITEMS = None
+	__DEFAULT_MAXIMUM_AGE = None
+	
 	def __init__(
 			self, logger: Logger,
 			path: Path,
@@ -39,9 +43,9 @@ class ConfigFile:
 		
 		self.__rotatable_paths: [Path] = []
 		
-		self.__minimum_items: int = 0
+		self.__minimum_items = self.__DEFAULT_MINIMUM_ITEMS
 		# noinspection PyTypeChecker
-		self.__maximum_items: int = None
+		self.__maximum_items: int = self.__DEFAULT_MAXIMUM_ITEMS
 		# noinspection PyTypeChecker
 		self.__maximum_age: int = None
 		
@@ -119,8 +123,11 @@ class ConfigFile:
 					
 					minimum_items = options["minimum-items"]
 					self.info(f"Found minimum-items option: {minimum_items}")
+					if minimum_items is None:
+						minimum_items = self.__DEFAULT_MINIMUM_ITEMS
 					assert isinstance(minimum_items, int), (
-						f"Option minimum-items must be int, but got: {minimum_items}"
+						f"Option minimum-items must be an integer,"
+						f" but got: {type(minimum_items).__name__} ({minimum_items})"
 					)
 					self.__minimum_items = minimum_items
 				else:
@@ -140,10 +147,10 @@ class ConfigFile:
 					
 					maximum_items = options["maximum-items"]
 					self.info(f"Found maximum-items option: {maximum_items}")
-					assert isinstance(maximum_items, int), (
-						f"Option maximum-items must be int, but got: {maximum_items}"
+					assert maximum_items is None or isinstance(maximum_items, int), (
+						f"Option maximum-items must be integer, but got: {maximum_items}"
 					)
-					assert maximum_items > 0, (
+					assert maximum_items is None or maximum_items > 0, (
 						f"Option maximum-items is zero, which doesn't make sense."
 					)
 					self.__maximum_items = maximum_items
