@@ -156,10 +156,11 @@ class ConfigFile:
 					
 					maximum_age = options["maximum-age"]
 					self.info(f"Found maximum-age option (max age in days): {maximum_age}")
-					assert isinstance(maximum_age, int), (
-						f"Option maximum-age must be int, but got: {maximum_age}"
+					assert maximum_age is None or isinstance(maximum_age, int), (
+						f"Option maximum-age must be None or an integer,"
+						f" but got: {type(maximum_age).__name__} ({maximum_age})"
 					)
-					assert maximum_age > 0, (
+					assert maximum_age is None or maximum_age > 0, (
 						f"Option maximum-age is zero, which doesn't make sense."
 					)
 					self.__maximum_age = maximum_age
