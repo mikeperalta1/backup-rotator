@@ -7,7 +7,7 @@ Suppose you have a third party backup program regularly dropping backup files in
 
 # License
 
-Copyright 2023 Mike Peralta; All rights reserved
+Copyright 2024 Mike Peralta; All rights reserved
 
 Releasing to the public under the GNU GENERAL PUBLIC LICENSE v3 (See LICENSE file for more)
 
