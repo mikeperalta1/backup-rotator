@@ -326,7 +326,12 @@ class BackupRotator:
 		best_ctime = None
 		for item in items:
 			
-			ctime = Util.detect_item_creation_date(config, item)
+			try:
+				ctime = Util.detect_item_creation_date(config, item)
+			except FileNotFoundError as e:
+				self.__logger.error(f"File disappeared while trying to check ctime: {item}")
+				continue
+			
 			if best_ctime is None or ctime < best_ctime:
 				best_ctime = ctime
 				best_item = item

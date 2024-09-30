@@ -42,6 +42,8 @@ class Util:
 				# print("got mtime")
 				stat = item.stat().st_birthtime
 				# print("got btime")
+			except FileNotFoundError as e:
+				raise e
 			except AttributeError:
 				pass
 			
